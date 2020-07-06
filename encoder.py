@@ -96,19 +96,23 @@ class Encoder:
     def encode(self, text):
         bpe_tokens = []
         for token in re.findall(self.pat, text):
+            # print("before processing:", token)
             token = ''.join(self.byte_encoder[b] for b in token.encode('utf-8'))
+            # print("after processing:", token, self.bpe(token), [self.encoder[bpe_token] for bpe_token in self.bpe(token).split(' ')])
             bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(' '))
         return bpe_tokens
 
-    def decode(self, tokens):
+    def decode(self, tokens, trunct=False):
         text = ''.join([self.decoder[token] for token in tokens])
         text = bytearray([self.byte_decoder[c] for c in text]).decode('utf-8', errors=self.errors)
+        if trunct:
+            text = text[:text.find('<|endoftext|>')]
         return text
 
-def get_encoder(model_name, models_dir):
-    with open(os.path.join(models_dir, model_name, 'encoder.json'), 'r') as f:
+def get_encoder(model_dir):
+    with open(os.path.join(model_dir, 'encoder.json'), 'r') as f:
         encoder = json.load(f)
-    with open(os.path.join(models_dir, model_name, 'vocab.bpe'), 'r', encoding="utf-8") as f:
+    with open(os.path.join(model_dir, 'vocab.bpe'), 'r', encoding="utf-8") as f:
         bpe_data = f.read()
     bpe_merges = [tuple(merge_str.split()) for merge_str in bpe_data.split('\n')[1:-1]]
     return Encoder(
